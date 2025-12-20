@@ -28,16 +28,55 @@ async function scrape_disciplinas(unidade_idx, page) {
     const data = await tableParser(page, {
       selector: SELECTOR_TABELA,
       allowedColNames: {
-        'Código': 'Código',
+        'Código': 'Indice da Turma',
         'Ano-Período': 'Ano-Período',
         'Docente': 'Docente',
+        'Horário': 'Horário',
         'Qtde Vagas Ofertadas': 'Qtde Vagas Ofertadas',
         'Qtde Vagas Ocupadas': 'Qtde Vagas Ocupadas',
-        'Local': 'Local'
+        'Local': 'Local' //TODO local nao funciona no momento
       },
-      csvSeparator: ','
+        extraCols: [
+        {
+        colName: 'Código da Disciplina',
+        data: '',
+        position: 0,
+        },
+        {
+            colName: 'Nome Disciplina',
+            data: '',
+            position: 1
+        }
+    ],
+      rowTransform: (row, getColumnIndex) => {
+        if (isNaN(row[getColumnIndex('Indice da Turma')])){
+            let string = row[getColumnIndex('Indice da Turma')]
+            row[getColumnIndex('Código da Disciplina')] = string.slice(0, string.indexOf(" "))
+            row[getColumnIndex('Nome Disciplina')] = string.slice(string.search(/- ./i) + 2, string.length)
+            delete row[getColumnIndex('Indice da Turma')]
+        }
+        if (row[getColumnIndex('Qtde Vagas Ofertadas')] === ""){
+            row[getColumnIndex('Qtde Vagas Ofertadas')] = row[getColumnIndex('Qtde Vagas Ofertadas') + 1]
+        }
+      },
+      newLine: ";",
+      asArray: true,
+      rowValuesAsArray: true,
+      csvSeparator: ',',
     });
-    file_saver.writeFile("tabelas_csv/" + nome_unidade.replace(/[$&+,:;=?@#|'<>.^*()%!-]/i, ""), data, err => {if (err) {console.log(err)}})
+    for (let i = 0; i < data.length; i++){
+        if (data[i][0] === ''){
+            data[i][0] = data[i-1][0]
+        }
+        if (data[i][1] === ''){
+            data[i][1] = data[i-1][1]
+        }
+        if ( i > 1 && data[i-1].length == 2){
+               delete data[i-1]
+        }
+    }
+    let result = data.join(";").replaceAll("\n", " & ").replaceAll(";","\n").replaceAll("\n\n","\n") //Pra professores 
+    file_saver.writeFile("tabelas_csv/" + nome_unidade.replace(/[$&+,:;=?@#|'<>.^*()%!-]/i, "").concat(".txt"), result, err => {if (err) {console.log(err)}})
 }
 
 async function run() {
@@ -63,7 +102,7 @@ await page.evaluate((selector) => {
     document.querySelector(selector).selectedIndex = 3; //ID semestre de verão
 }, SELECTOR_PERIODO)
 
-for (i = 1; i < qtd_unidades; i++ ){
+for (let i = 1; i < qtd_unidades; i++ ){
     await scrape_disciplinas(i, page)
 }
 }
