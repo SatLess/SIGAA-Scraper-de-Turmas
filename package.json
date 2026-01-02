@@ -1,0 +1,27 @@
+{
+  "name": "sigaa-scraper-de-turmas",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SatLess/SIGAA-Scraper-de-Turmas.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/SatLess/SIGAA-Scraper-de-Turmas/issues"
+  },
+  "homepage": "https://github.com/SatLess/SIGAA-Scraper-de-Turmas#readme",
+  "dependencies": {
+    "puppeteer": "^24.34.0",
+    "puppeteer-extra": "^3.3.6",
+    "puppeteer-extra-plugin-stealth": "^2.11.2",
+    "puppeteer-table-parser": "^2.2.0"
+  }
+}
