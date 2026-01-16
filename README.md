@@ -28,8 +28,41 @@ Caso apareça o Alerta dizendo *"Não foi possÍvel finalizar a operação, pois
 </details>
 
 <details>
+
+<Summary>Como Rodar</summary>
+A aplicação vem com CLI para maior facilidade de uso.
+Para isso, no terminal, escreva no terminal: 
+
+``` ./index.js Nivel_Ensino Ano Periodo ```
+
+No final você pode adicionar ```HD``` para ver o programa em ação. 
+Por exemplo, para ver todas disciplinas ofertadas no semestre de verão de 2025:
+``` ./index.js T 2025 V ```
+
+## Argumentos 
+### Nível de Ensino
+Para o nível de ensino, as opções estão listadas abaixo:
+  * 'T' - Todos os níveis de ensino
+  * 'FC' - Formação Complementar
+  * 'G' - Graduação
+  * 'E' - Especialização
+  * 'R' - Residência
+  * 'S' - Strico Sensu
+  * 'M' - Mestrado
+  * 'D' - Doutorado
+
+### Ano
+Ano de referencia para o scrape de disciplinas.
+
+### Periodo
+São aceitos os períodos:
+  * '1' - Primeiro período
+  * '2' - Segundo período
+  * 'V' - Semestre de verão
+</details>
+
 <Summary>Todo</summary>
   
-- [ ] criar um CL para maior facilidade de uso.
+- [x] criar um CLI para maior facilidade de uso.
 
 </details>
