@@ -90,6 +90,9 @@ async function execute() {
         console.clear()
         console.log (Math.round(i/qtd_departamentos * 100) + "%")
     }
+    
+    await browser.close()
+    return
 }
 
 CLI_parser()
