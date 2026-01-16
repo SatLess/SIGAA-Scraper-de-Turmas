@@ -55,11 +55,12 @@ São aceitos os períodos:
   * '1' - Primeiro período
   * '2' - Segundo período
   * 'V' - Semestre de verão
-</details>
 
 ### Misc
 No final, é possivel adionar argumento opcional para o scraper:
 * 'HD' - desabilita modo Headless 
+
+</details>
 
 <details><Summary>Problemas conhecidos</summary>
  Caso o programa no modo Headless pareça não estar funcionando, desabilite o modo headless com ```HD``` para diagnosticar o problema. 
