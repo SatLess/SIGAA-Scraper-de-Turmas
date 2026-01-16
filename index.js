@@ -1,151 +1,97 @@
+#!/usr/bin/env node
+
 const puppeteer = require('puppeteer-extra');
 const StealthPlugin = require('puppeteer-extra-plugin-stealth');
-const { tableParser } = require('puppeteer-table-parser')
-const file_saver = require('node:fs');
 puppeteer.use(StealthPlugin());
 
-const SELECTOR_GRADUACAO = "select[id='formTurma:inputNivel']";
-const SELECTOR_UNIDADE = "select[id='formTurma:inputDepto']";
-const SELECTOR_ANO = "input[id='formTurma:inputAno']"
-const SELECTOR_PERIODO = "select[id='formTurma:inputPeriodo']";
-const SELECTOR_BUSCAR = "input[name='formTurma:j_id_jsp_1370969402_11']";
-const SELECTOR_TABELA = "table[class='listagem']"
+const scraper = require('./src/scraper')
+const constantes = require('./src/constantes')
+let { argv } = require('node:process');
 
-const SEMESTRE = {
-    PRIMEIRO: 0,
-    SEGUNDO: 1,
-    VERAO: 3,
-}; 
+let nivel_ensino_escolhido
+let periodo_escolhido 
+let ano_escolhido 
+let is_headless
 
-const NIVEL_ENSINO = {
-    FORMACAO_COMPLEMENTAR: 1,
-    GRADUACAO: 2,
-    ESPECIALIZACAO: 3,
-    RESIDENCIA: 4,
-    STRICTO_SENSU: 5,
-    MESTRADO: 6,
-    DOUTORADO: 7,
-};
+async function CLI_parser() {
 
-let nivel_ensino_escolhido = NIVEL_ENSINO.GRADUACAO
-let periodo_escolhido = SEMESTRE.PRIMEIRO;
-let ano_escolhido = "2026"
-
-async function scrape_disciplinas(unidade_idx, page) {
-
-    await page.waitForSelector(SELECTOR_BUSCAR)
-    await page.waitForSelector(SELECTOR_UNIDADE)
-    const nome_unidade = await page.evaluate((selector_unidade, selector_buscar, idx) => {
-        let unidade = document.querySelector(selector_unidade)
-        unidade.selectedIndex = idx
-        let nome = unidade.options[idx].text
-        document.querySelector(selector_buscar).click(); 
-        return nome
-}, SELECTOR_UNIDADE,SELECTOR_BUSCAR, unidade_idx)
-    await page.waitForNavigation()
+    if (argv.length < 5){
+        console.log("Número de argumentos insuficiente.\nInsira, na Seguinte ordem:\nNivel_Ensino Ano Periodo")
+        return
+    }
     
-    //Checa se o departamento possui ao menos uma matéria conforme os filtros escolhidos.
-    const allowed = await page.evaluate((selector) => document.querySelector(selector) != null, SELECTOR_TABELA)
-    if (allowed === false) {return}
-
-    const data = await tableParser(page, {
-      selector: SELECTOR_TABELA,
-      allowedColNames: {
-        'Código': 'Indice da Turma',
-        'Ano-Período': 'Ano-Período',
-        'Docente': 'Docente',
-        'Horário': 'Horário',
-        'Qtde Vagas Ofertadas': 'Qtde Vagas Ofertadas',
-        'Qtde Vagas Ocupadas': 'Qtde Vagas Ocupadas',
-        'Local': 'Local' //TODO local nao funciona no momento
-      },
-        extraCols: [
-        {
-        colName: 'Código da Disciplina',
-        data: '',
-        position: 0,
-        },
-        {
-            colName: 'Nome Disciplina',
-            data: '',
-            position: 1
-        },
-    ],
-      rowTransform: (row, getColumnIndex) => {
-        // Remove o nome e o código da disciplina do número da turma e os colocam em suas respectivas colunas.
-        if (isNaN(row[getColumnIndex('Indice da Turma')])){
-            let string = row[getColumnIndex('Indice da Turma')]
-            row[getColumnIndex('Código da Disciplina')] = string.slice(0, string.indexOf(" "))
-            row[getColumnIndex('Nome Disciplina')] = string.slice(string.search(/- ./i) + 2, string.length)
-            delete row[getColumnIndex('Indice da Turma')]
+    try {
+        if (constantes.NIVEL_ENSINO[argv[2].toUpperCase()] === undefined){
+            throw new Error("Nível De Ensino Inválido. Inserir apenas Níveis aceitos, como:\n\
+        'T' - Todos os níveis de ensino\n \
+        'FC' - Formação Complementar\n \
+        'G' - Graduação\n \
+        'E' - Especialização\n \
+        'R' - Residência\n \
+        'S' - Strico Sensu\n \
+        'M' - Mestrado\n \
+        'D' - Doutorado)") 
         }
-        if (row[getColumnIndex('Qtde Vagas Ofertadas')] === ""){
-            row[getColumnIndex('Qtde Vagas Ofertadas')] = row[getColumnIndex('Qtde Vagas Ofertadas') + 1]
+        if (isNaN(argv[3])){
+            throw new Error("Ano inválido. Insira apenas números")
         }
-      },
-      newLine: ";", //Resolve Bug quando há mais um '\n' dentro de uma coluna.
-      asArray: true,
-      rowValuesAsArray: true,
-      csvSeparator: ',',
-    });
-    for (let i = 0; i < data.length; i++){
-        if (data[i][0] === ''){
-            data[i][0] = data[i-1][0]
+        if (constantes.SEMESTRE[argv[4]] === undefined){
+            throw new Error("Periodo Invalido Insira valores aceitos como:\n \
+                '1' - Primeiro período\n \
+                '2' - Segundo período \n \
+                'V' - Semestre de verão")
         }
-        if (data[i][1] === ''){
-            data[i][1] = data[i-1][1]
-        }
-        if ( i > 1 && data[i-1].length == 2){
-               delete data[i-1]
-        }
+    } catch (error) {
+        console.log(error)
+        return
     }
+    
+    nivel_ensino_escolhido = constantes.NIVEL_ENSINO[argv[2].toUpperCase()]
+    ano_escolhido = argv[3]
+    periodo_escolhido = constantes.SEMESTRE[argv[4].toUpperCase()]
+    is_headless = (argv.length > 5 && constantes.MISC.indexOf(argv[5].toUpperCase()) !== -1) ? false : true 
 
-let result = data.join(";").replaceAll("\n", " & ").replaceAll(";","\n").replaceAll("\n\n","\n")
-let folderName = `tabelas_csv/${ano_escolhido}-${periodo_escolhido+1}/`
-
-try {
-  if (!file_saver.existsSync(folderName)) {
-    file_saver.mkdirSync(folderName);
-  }
-} catch (err) {
-  console.error(err);
+    await execute()
+    console.log('Scrape Finalizado')
 }
-    file_saver.writeFile(folderName + nome_unidade.replace(/[\/$&+,:;=?@#|'<>.^*()%!-]/i, "").concat(".csv"), result, err => {if (err) {console.log(err)}})
+
+async function execute() {
+
+    const browser = await puppeteer.launch({headless:is_headless});
+    const page = await browser.newPage();
+    await page.goto('https://sigaa.unb.br/sigaa/public/turmas/listar.jsf');
+
+    //Seleciona Nível de ensino escolhido
+    await page.waitForSelector(constantes.SELECTOR_GRADUACAO);
+    await page.evaluate((selector, nivel_ensino) => {
+        document.querySelector(selector).selectedIndex = nivel_ensino;
+    }, constantes.SELECTOR_GRADUACAO, nivel_ensino_escolhido)
+
+    await page.waitForSelector(constantes.SELECTOR_UNIDADE)
+    let qtd_departamentos = await page.evaluate((selector) => {
+        let botao_unidade = document.querySelector(selector)
+        return botao_unidade.options.length
+    }, constantes.SELECTOR_UNIDADE)
+
+    //Seleciona Ano Escolhido
+    await page.waitForSelector(constantes.SELECTOR_ANO)
+    await page.evaluate((selector, ano) => {
+        document.querySelector(selector).value = ano;
+    }, constantes.SELECTOR_ANO, ano_escolhido)
+
+    //Seleciona Período Escolhido
+    await page.waitForSelector(constantes.SELECTOR_PERIODO)
+    await page.evaluate((selector, periodo) => {
+        document.querySelector(selector).selectedIndex = periodo;
+    }, constantes.SELECTOR_PERIODO, periodo_escolhido)
+
+    for (let i = 0; i < qtd_departamentos; i++ ){
+        await scraper.scrape_disciplinas(i, page, ano_escolhido, periodo_escolhido)
+        console.clear()
+        console.log (Math.round(i/qtd_departamentos * 100) + "%")
     }
-
-async function run() {
-
-const browser = await puppeteer.launch({headless:false});
-const page = await browser.newPage();
-await page.goto('https://sigaa.unb.br/sigaa/public/turmas/listar.jsf');
-
- //Seleciona Nível de ensino escolhido
-await page.waitForSelector(SELECTOR_GRADUACAO);
-await page.evaluate((selector, nivel_ensino) => {
-    document.querySelector(selector).selectedIndex = nivel_ensino;
-}, SELECTOR_GRADUACAO, nivel_ensino_escolhido)
-
-await page.waitForSelector(SELECTOR_UNIDADE)
-let qtd_departamentos = await page.evaluate((selector) => {
-    let botao_unidade = document.querySelector(selector)
-    return botao_unidade.options.length
-}, SELECTOR_UNIDADE)
-
- //Seleciona Ano Escolhido
-await page.waitForSelector(SELECTOR_ANO)
-await page.evaluate((selector, ano) => {
-    document.querySelector(selector).value = ano;
-}, SELECTOR_ANO, ano_escolhido)
-
- //Seleciona Período Escolhido
-await page.waitForSelector(SELECTOR_PERIODO)
-await page.evaluate((selector, periodo) => {
-    document.querySelector(selector).selectedIndex = periodo;
-}, SELECTOR_PERIODO, periodo_escolhido)
-
-for (let i = 0; i < qtd_departamentos; i++ ){
-    await scrape_disciplinas(i, page)
-}
 }
 
-run()
+CLI_parser()
+
+

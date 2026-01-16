@@ -23,5 +23,8 @@
     "puppeteer-extra": "^3.3.6",
     "puppeteer-extra-plugin-stealth": "^2.11.2",
     "puppeteer-table-parser": "^2.2.0"
+  },
+  "bin": {
+    "execute": "index.js"
   }
 }
