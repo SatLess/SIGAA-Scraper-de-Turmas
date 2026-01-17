@@ -27,7 +27,7 @@ Para rodar o projeto, foram necessárias:
 
 <Summary>Como Rodar</summary>
 A aplicação vem com CLI para maior facilidade de uso.
-Para isso, no terminal, escreva no terminal: 
+Escreva os argumentos na seguinte ordem: 
 
 ``` ./index.js Nivel_Ensino Ano Periodo ```
 
@@ -63,7 +63,7 @@ No final, é possivel adionar argumento opcional para o scraper:
 </details>
 
 <details><Summary>Problemas conhecidos</summary>
- Caso o programa no modo Headless pareça não estar funcionando, desabilite o modo headless com ```HD``` para diagnosticar o problema. 
+ Caso o programa no modo Headless pareça não estar funcionando, desabilite o modo headless com `HD` para diagnosticar o problema. 
  A partir daí, caso apareça o Alerta dizendo *"Não foi possÍvel finalizar a operação, pois a página que se está tentando acessar não está mais ativa. Por favor, reinicie os procedimentos."*, pressione para voltar à página anterior e funcionará como esperado.
 </details>
 
