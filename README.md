@@ -31,9 +31,10 @@ Escreva os argumentos na seguinte ordem:
 
 ``` ./index.js Nivel_Ensino Ano Periodo ```
 
-No final você pode adicionar ```HD``` para ver o programa em ação. 
 Por exemplo, para ver todas disciplinas ofertadas no semestre de verão de 2025:
 ``` ./index.js T 2025 V ```
+
+No final você pode adicionar ```HD``` para opcionalmente ver o browser instanciado enquanto o programa realiza o scraping. 
 
 ## Argumentos 
 ### Nível de Ensino
