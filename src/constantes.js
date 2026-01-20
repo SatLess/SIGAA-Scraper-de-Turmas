@@ -4,6 +4,9 @@ module.exports = Object.freeze({
     SELECTOR_UNIDADE : "select[id='formTurma:inputDepto']",
     SELECTOR_ANO : "input[id='formTurma:inputAno']",
     SELECTOR_PERIODO : "select[id='formTurma:inputPeriodo']",
+    SELECTOR_UNIDADE : "select[id='formTurma:inputDepto']",
+    SELECTOR_BUSCAR :  "input[name='formTurma:j_id_jsp_1370969402_11']",
+    SELECTOR_TABELA : "table[class='listagem']",
  
     SEMESTRE : {
         '1': 0, // Primeiro Semestre

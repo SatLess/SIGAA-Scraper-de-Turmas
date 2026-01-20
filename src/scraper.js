@@ -1,30 +1,36 @@
 
 const { tableParser } = require('puppeteer-table-parser')
 const file_saver = require('node:fs');
+const constantes = require('./constantes')
 
-const SELECTOR_UNIDADE = "select[id='formTurma:inputDepto']";
-const SELECTOR_BUSCAR = "input[name='formTurma:j_id_jsp_1370969402_11']";
-const SELECTOR_TABELA = "table[class='listagem']"
 
 module.exports = {
  scrape_disciplinas: async function (unidade_idx, page, ano_escolhido, periodo_escolhido) {
-    await page.waitForSelector(SELECTOR_BUSCAR)
-    await page.waitForSelector(SELECTOR_UNIDADE)
+    await page.waitForSelector(constantes.SELECTOR_BUSCAR)
+    await page.waitForSelector(constantes.SELECTOR_UNIDADE)
     const nome_unidade = await page.evaluate((selector_unidade, selector_buscar, idx) => {
         let unidade = document.querySelector(selector_unidade)
         unidade.selectedIndex = idx
         let nome = unidade.options[idx].text
         document.querySelector(selector_buscar).click(); 
         return nome
-}, SELECTOR_UNIDADE,SELECTOR_BUSCAR, unidade_idx)
+}, constantes.SELECTOR_UNIDADE,constantes.SELECTOR_BUSCAR, unidade_idx)
     await page.waitForNavigation()
     
     //Checa se o departamento possui ao menos uma matéria conforme os filtros escolhidos.
-    const allowed = await page.evaluate((selector) => document.querySelector(selector) != null, SELECTOR_TABELA)
+    const allowed = await page.evaluate((selector) => document.querySelector(selector) != null, constantes.SELECTOR_TABELA)
     if (allowed === false) {return}
+      //Remove células vazias da tabela, de modo que 'tableParser' mapeie corretamente os valores para cada coluna.
+      await page.evaluate((selector) => {
+        let table_body = document.querySelector(selector).children[2]
+        const empty_cell_idx = 4 
+        for (let i = 0; i < table_body.children.length; i++){
+          if (table_body.children[i].cells.length !== 1) table_body.children[i].deleteCell(empty_cell_idx)
+        }
+      }, constantes.SELECTOR_TABELA)
 
     const data = await tableParser(page, {
-      selector: SELECTOR_TABELA,
+      selector: constantes.SELECTOR_TABELA,
       allowedColNames: {
         'Código': 'Indice da Turma',
         'Ano-Período': 'Ano-Período',
@@ -32,7 +38,7 @@ module.exports = {
         'Horário': 'Horário',
         'Qtde Vagas Ofertadas': 'Qtde Vagas Ofertadas',
         'Qtde Vagas Ocupadas': 'Qtde Vagas Ocupadas',
-        'Local': 'Local' //TODO local nao funciona no momento
+        'Local': 'Local'
       },
         extraCols: [
         {
@@ -54,11 +60,8 @@ module.exports = {
             row[getColumnIndex('Nome Disciplina')] = string.slice(string.search(/- ./i) + 2, string.length)
             delete row[getColumnIndex('Indice da Turma')]
         }
-        if (row[getColumnIndex('Qtde Vagas Ofertadas')] === ""){
-            row[getColumnIndex('Qtde Vagas Ofertadas')] = row[getColumnIndex('Qtde Vagas Ofertadas') + 1]
-        }
       },
-      newLine: ";", //Resolve Bug quando há mais um '\n' dentro de uma coluna.
+      newLine: ";",
       asArray: true,
       rowValuesAsArray: true,
       csvSeparator: ',',

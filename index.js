@@ -59,7 +59,7 @@ async function execute() {
 
     const browser = await puppeteer.launch({headless:is_headless});
     const page = await browser.newPage();
-    await page.goto('https://sigaa.unb.br/sigaa/public/turmas/listar.jsf');
+    await page.goto('https://sigaa.unb.br/sigaa/public/turmas/listar.jsf', {timeout: 0});
 
     //Seleciona Nível de ensino escolhido
     await page.waitForSelector(constantes.SELECTOR_GRADUACAO);
